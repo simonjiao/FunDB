@@ -8,10 +8,12 @@ use serde::{de::DeserializeOwned, Serialize};
 use std::{borrow::Cow, cmp::Ordering, convert::TryInto, env, fmt, fs, mem, ops::Deref};
 
 lazy_static! {
+    /// golable variable for cache directory, default to /tmp
     pub static ref CACHE_DIR: String = env::var("FUNDB_DIR").unwrap_or_else(|_| "/tmp".to_owned());
 }
 
 #[macro_export]
+/// give it another shot if we failed in the first time
 macro_rules! try_twice {
     ($ops: expr) => {
         ruc::pnk!($ops.c(d!()).or_else(|e| {
@@ -22,6 +24,7 @@ macro_rules! try_twice {
 }
 
 #[macro_export]
+/// generate a unique path
 macro_rules! unique_path {
     () => {
         format!(
@@ -37,6 +40,7 @@ macro_rules! unique_path {
 }
 
 #[macro_export]
+/// create a vecx
 macro_rules! new_vecx {
     ($ty: ty, $in_mem_cnt: expr) => {
         $crate::new_vecx_custom!($ty, $in_mem_cnt, false)
@@ -53,6 +57,7 @@ macro_rules! new_vecx {
 }
 
 #[macro_export]
+/// create a vecx with more custom options
 macro_rules! new_vecx_custom {
     ($ty: ty, $in_mem_cnt: expr, $is_tmp: expr) => {{
         let obj: $crate::Vecx<$ty> = $crate::try_twice!($crate::Vecx::new(
@@ -76,6 +81,7 @@ macro_rules! new_vecx_custom {
 }
 
 #[macro_export]
+/// create a mapx
 macro_rules! new_mapx {
     ($ty: ty, $in_mem_cnt: expr) => {
         $crate::new_mapx_custom!($ty, $in_mem_cnt, false)
@@ -92,6 +98,7 @@ macro_rules! new_mapx {
 }
 
 #[macro_export]
+/// create a mapx with more custom options
 macro_rules! new_mapx_custom {
     ($ty: ty, $in_mem_cnt: expr, $is_tmp: expr) => {{
         let obj: $crate::Mapx<$ty> = $crate::try_twice!($crate::Mapx::new(
@@ -152,7 +159,8 @@ where
     type Target = V;
 
     fn deref(&self) -> &Self::Target {
-        todo!()
+        // todo!()
+        self.value.deref()
     }
 }
 
@@ -161,7 +169,8 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn eq(&self, other: &Value<'a, V>) -> bool {
-        todo!()
+        // todo!()
+        self.value.deref() == other.value.deref()
     }
 }
 
@@ -170,7 +179,8 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn eq(&self, other: &V) -> bool {
-        todo!()
+        // todo!()
+        self.value.deref() == other
     }
 }
 
@@ -179,7 +189,8 @@ where
     V: fmt::Debug + Clone + Eq + PartialEq + Ord + PartialOrd + Serialize + DeserializeOwned,
 {
     fn partial_cmp(&self, other: &V) -> Option<Ordering> {
-        todo!()
+        // todo!()
+        self.value.deref().partial_cmp(other)
     }
 }
 
@@ -188,7 +199,10 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn from(v: V) -> Self {
-        todo!()
+        // todo!()
+        Self {
+            value: Cow::Owned(v),
+        }
     }
 }
 
@@ -197,7 +211,8 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn from(v: Cow<'a, V>) -> Self {
-        todo!()
+        // todo!()
+        Self { value: v }
     }
 }
 
@@ -206,7 +221,8 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn from(v: Value<'a, V>) -> Self {
-        todo!()
+        // todo!()
+        v.into_inner()
     }
 }
 
@@ -215,7 +231,10 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn from(v: &V) -> Self {
-        todo!()
+        // todo!()
+        Self {
+            value: Cow::Owned(v.clone()),
+        }
     }
 }
 
@@ -225,15 +244,26 @@ where
 
 #[inline(always)]
 pub(crate) fn sled_open(path: &str, is_tmp: bool) -> Result<sled::Db> {
-    todo!()
+    // todo!()
+    let config = sled::Config::new().temporary(is_tmp).path(path);
+    let db = config.open().c(d!())?;
+    Ok(db)
 }
 
 #[inline(always)]
 pub(crate) fn read_db_len(path: &str) -> Result<usize> {
-    todo!()
+    // todo!()
+    let buffer = fs::read(path).c(d!())?;
+    let len = mem::size_of::<usize>();
+    match &buffer[..len].try_into() {
+        Ok(&bytes) => Ok(usize::from_ne_bytes(bytes)),
+        Err(e) => Err(e).c(d!()),
+    }
 }
 
 #[inline(always)]
 pub(crate) fn write_db_len(path: &str, len: usize) -> Result<()> {
-    todo!()
+    // todo!()
+    fs::write(path, &len.to_ne_bytes()).c(d!())?;
+    Ok(())
 }

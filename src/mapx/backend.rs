@@ -122,7 +122,11 @@ where
     // Imitate the behavior of '.iter()'
     #[inline(always)]
     pub(super) fn iter(&self) -> MapxIter<K, V> {
-        todo!()
+        MapxIter {
+            iter: self.db.iter(),
+            _pd0: PhantomData,
+            _pd1: PhantomData,
+        }
     }
 
     pub(super) fn contains_key(&self, key: &K) -> bool {
@@ -177,7 +181,14 @@ where
 {
     type Item = (K, V);
     fn next(&mut self) -> Option<Self::Item> {
-        todo!()
+        // todo!()
+        if let Some(Ok((k, v))) = self.iter.next() {
+            return Some((
+                pnk!(bincode::deserialize(&k)),
+                pnk!(serde_json::from_slice(&v)),
+            ));
+        }
+        None
     }
 }
 
@@ -187,7 +198,14 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn next_back(&mut self) -> Option<Self::Item> {
-        todo!()
+        // todo!()
+        if let Some(Ok((k, v))) = self.iter.next_back() {
+            return Some((
+                pnk!(bincode::deserialize(&k)),
+                pnk!(serde_json::from_slice(&v)),
+            ));
+        }
+        None
     }
 }
 
@@ -212,7 +230,13 @@ where
     V: Clone + Eq + PartialEq + Serialize + DeserializeOwned + fmt::Debug,
 {
     fn eq(&self, other: &Mapx<K, V>) -> bool {
-        todo!()
+        // todo!()
+        if self.len() != other.len() {
+            return false;
+        }
+
+        self.iter()
+            .all(|(key, value)| other.get(&key).map_or(false, |v| value == v))
     }
 }
 
